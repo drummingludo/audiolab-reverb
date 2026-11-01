@@ -1,0 +1,128 @@
+name: Fabrication Mac et Windows
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    name: Mac (VST3 + AU + AAX, Apple Silicon et Intel)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compiler
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --target AudioLabReverb_VST3 AudioLabReverb_AU AudioLabReverb_AAX -j 4
+
+      - name: Signer (signature locale, sans compte Apple)
+        run: |
+          A=build/AudioLabReverb_artefacts/Release
+          codesign --force --deep --sign - "$A/VST3/Audio Lab Reverb.vst3"
+          codesign --force --deep --sign - "$A/AU/Audio Lab Reverb.component"
+          codesign --force --deep --sign - "$A/AAX/Audio Lab Reverb.aaxplugin"
+          lipo -info "$A/VST3/Audio Lab Reverb.vst3/Contents/MacOS/Audio Lab Reverb"
+
+      - name: Vérifier l'AAX (structure, architectures, point d'entrée)
+        run: |
+          X="build/AudioLabReverb_artefacts/Release/AAX/Audio Lab Reverb.aaxplugin"
+          B="$X/Contents/MacOS/Audio Lab Reverb"
+          test -f "$B"
+          lipo "$B" -verify_arch arm64 x86_64
+          plutil -p "$X/Contents/Info.plist" | grep -E "CFBundleIdentifier|CFBundleName|CFBundleShortVersionString"
+          if nm -gU "$B" | grep -q ACFRegisterPlugin; then echo "Point d'entrée AAX exporté"; else echo "Point d'entrée AAX introuvable"; exit 1; fi
+          codesign --verify --deep --strict "$X" && echo "Signature locale valide (signature PACE à ajouter avant diffusion)"
+
+      - name: Valider (auval + pluginval)
+        run: |
+          A=build/AudioLabReverb_artefacts/Release
+          mkdir -p ~/Library/Audio/Plug-Ins/Components ~/Library/Audio/Plug-Ins/VST3
+          cp -R "$A/AU/Audio Lab Reverb.component" ~/Library/Audio/Plug-Ins/Components/
+          cp -R "$A/VST3/Audio Lab Reverb.vst3" ~/Library/Audio/Plug-Ins/VST3/
+          killall -9 AudioComponentRegistrar || true
+          sleep 3
+          auval -v aufx AlRv Trsv
+          curl -sSL -o pv.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+          unzip -q pv.zip
+          ./pluginval.app/Contents/MacOS/pluginval --strictness-level 10 --validate-in-process --skip-gui-tests --validate ~/Library/Audio/Plug-Ins/VST3/"Audio Lab Reverb.vst3"
+          ./pluginval.app/Contents/MacOS/pluginval --strictness-level 10 --validate-in-process --skip-gui-tests --validate ~/Library/Audio/Plug-Ins/Components/"Audio Lab Reverb.component"
+
+      - name: Préparer le paquet Mac
+        run: |
+          A=build/AudioLabReverb_artefacts/Release
+          P="Audio Lab Reverb - Mac"
+          mkdir -p "$P"
+          cp -R "$A/VST3/Audio Lab Reverb.vst3" "$A/AU/Audio Lab Reverb.component" "$P/"
+          mkdir -p "$P/Pro Tools (AAX non signé)"
+          cp -R "$A/AAX/Audio Lab Reverb.aaxplugin" "$P/Pro Tools (AAX non signé)/"
+          cp packaging/mac/Installer.command packaging/mac/LISEZ-MOI.txt "$P/"
+          chmod +x "$P/Installer.command"
+          ditto -c -k --sequesterRsrc --keepParent "$P" AudioLabReverb-Mac.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AudioLabReverb-Mac
+          path: AudioLabReverb-Mac.zip
+
+  windows:
+    name: Windows (VST3 + AAX)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compiler
+        run: |
+          cmake -B build -A x64
+          cmake --build build --config Release --target AudioLabReverb_VST3 AudioLabReverb_AAX
+
+      - name: Valider (pluginval)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip -OutFile pv.zip
+          Expand-Archive pv.zip -DestinationPath pv
+          .\pv\pluginval.exe --strictness-level 10 --validate-in-process --skip-gui-tests --validate "build\AudioLabReverb_artefacts\Release\VST3\Audio Lab Reverb.vst3"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Préparer le paquet Windows
+        shell: pwsh
+        run: |
+          $P = "Audio Lab Reverb - Windows"
+          New-Item -ItemType Directory -Force -Path $P | Out-Null
+          Copy-Item -Recurse "build\AudioLabReverb_artefacts\Release\VST3\Audio Lab Reverb.vst3" $P
+          New-Item -ItemType Directory -Force -Path "$P\Pro Tools (AAX non signe)" | Out-Null
+          Copy-Item -Recurse "build\AudioLabReverb_artefacts\Release\AAX\Audio Lab Reverb.aaxplugin" "$P\Pro Tools (AAX non signe)"
+          Copy-Item packaging\windows\LISEZ-MOI.txt $P
+          Compress-Archive -Path $P -DestinationPath AudioLabReverb-Windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AudioLabReverb-Windows
+          path: AudioLabReverb-Windows.zip
+
+  publier:
+    name: Publier la version
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [mac, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Audio Lab Reverb ${{ github.ref_name }}
+          files: |
+            AudioLabReverb-Mac.zip
+            AudioLabReverb-Windows.zip
+          body: |
+            Réverbération d'Audio Lab (Transversal Studio) : Chamber, Plate, Spring, Room, Hall, Church.
+            - Mac : VST3 + AU, Apple Silicon et Intel (AudioLabReverb-Mac.zip)
+            - Windows : VST3 64 bits (AudioLabReverb-Windows.zip)
+            - Pro Tools : AAX non signé dans chaque archive (Pro Tools Developer uniquement, en attendant la signature PACE)
+            Mode d'emploi dans le fichier LISEZ-MOI de chaque archive.
