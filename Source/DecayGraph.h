@@ -42,7 +42,7 @@ struct IrResult
 class IrRenderer : private juce::Thread
 {
 public:
-    IrRenderer() : juce::Thread ("Audio Lab Reverb - courbe") { startThread (juce::Thread::Priority::low); }
+    IrRenderer() : juce::Thread ("Audio Lab Reverb - curve") { startThread (juce::Thread::Priority::low); }
     ~IrRenderer() override { signalThreadShouldExit(); notify(); stopThread (3000); }
 
     void request (const rv::ReverbEngine::Params& p)

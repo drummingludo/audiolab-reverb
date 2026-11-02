@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.22)
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "")
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "")
 
-project(AudioLabReverb VERSION 1.0.0 LANGUAGES C CXX)
+project(AudioLabReverb VERSION 1.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -37,8 +37,8 @@ endif()
 
 juce_add_plugin(AudioLabReverb
     PRODUCT_NAME "Audio Lab Reverb"
-    PLUGIN_NAME "Audio Lab Reverb"
-    DESCRIPTION "Reverb d'Audio Lab (Chamber, Plate, Spring, Room, Hall, Church)"
+    PLUGIN_NAME "Lab Verb"
+    DESCRIPTION "Audio Lab reverb (Chamber, Plate, Spring, Room, Hall, Church)"
     COMPANY_NAME "Transversal Studio"
     COMPANY_WEBSITE "https://transversalstudio.fr"
     COMPANY_EMAIL "ludo@transversalstudio.fr"

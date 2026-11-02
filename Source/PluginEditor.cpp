@@ -5,18 +5,18 @@ using juce::String;
 
 static String U (const char* s) { return String::fromUTF8 (s); }
 
-static const char* helpPre   = "Pre-delay : retard avant la réverbération. Quelques dizaines de ms détachent la voix de sa réverb "
-                               "et gardent l'attaque nette. Double-clic : valeur du mode.";
-static const char* helpDec   = "Decay : durée de la réverbération (RT60), le temps pour que la queue baisse de 60 dB, "
-                               "mesuré dans le médium. Les graves et les aigus suivent le caractère du mode.";
-static const char* helpMix   = "Mix : dosage entre le son direct et la réverbération. En insert, 15 à 30 % ; "
-                               "sur une piste de départ (bus), 100 %.";
-static const char* helpSize  = "Size : taille de l'espace. Plus grand = premières réflexions plus espacées et queue plus ample.";
-static const char* helpDamp  = "Damp : amortissement des aigus. Plus on monte, plus les aigus s'éteignent vite, "
-                               "comme dans une salle absorbante.";
-static const char* helpWidth = "Width : largeur stéréo de la réverbération. 0 % = mono, 100 % = toute la largeur.";
-static const char* helpTabs  = "Mode de réverbération. Choisir un mode charge ses réglages de départ : "
-                               "Chamber (chambre d'écho), Plate (plaque), Spring (ressort), Room (pièce), Hall (salle de concert), Church (église).";
+static const char* helpPre   = "Pre-delay: delay before the reverb starts. A few tens of ms separate the voice from its reverb "
+                               "and keep the attack clear. Double-click: value of the current mode.";
+static const char* helpDec   = "Decay: length of the reverb (RT60), the time it takes the tail to drop by 60 dB, "
+                               "measured in the midrange. The lows and highs follow the character of the mode.";
+static const char* helpMix   = "Mix: balance between the direct sound and the reverb. On an insert, 15 to 30 %; "
+                               "on a send track (bus), 100 %.";
+static const char* helpSize  = "Size: size of the space. Bigger = early reflections further apart and a wider tail.";
+static const char* helpDamp  = "Damp: high-frequency damping. The higher it is, the faster the highs die away, "
+                               "as in an absorbent room.";
+static const char* helpWidth = "Width: stereo width of the reverb. 0 % = mono, 100 % = full width.";
+static const char* helpTabs  = "Reverb mode. Choosing a mode loads its starting settings: "
+                               "Chamber (echo chamber), Plate, Spring, Room, Hall (concert hall), Church.";
 
 AudioLabReverbEditor::AudioLabReverbEditor (AudioLabReverbProcessor& p)
     : AudioProcessorEditor (&p), proc (p)
