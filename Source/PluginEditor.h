@@ -3,7 +3,7 @@
 #include "ReverbWidgets.h"
 #include "DecayGraph.h"
 
-class AudioLabReverbEditor : public juce::AudioProcessorEditor, private juce::Timer
+class AudioLabReverbEditor : public juce::AudioProcessorEditor
 {
 public:
     explicit AudioLabReverbEditor (AudioLabReverbProcessor&);
@@ -12,8 +12,9 @@ public:
     void paint (juce::Graphics&) override {}
     void resized() override;
 
-    // Mêmes tailles d'éléments que le compresseur (grille de 24 px) : 760 x 304
-    static constexpr int baseW = 760, baseH = 304;
+    // Version de test sans écran (demande de Ludovic du 03/11/2026) : une colonne, mêmes tailles
+    // d'éléments que le compresseur (grille de 24 px) : modes en 2 rangées de 3, Pre-delay / Decay, 4 curseurs
+    static constexpr int baseW = 286, baseH = 386;
 
 private:
     class Content : public juce::Component
@@ -25,7 +26,6 @@ private:
         AudioLabReverbEditor& ed;
     };
 
-    void timerCallback() override;
     float modeDefault (const char* id) const;
 
     AudioLabReverbProcessor& proc;
@@ -37,10 +37,6 @@ private:
     std::unique_ptr<audiolab::ReverbKnob> kPre, kDec;
     std::unique_ptr<audiolab::LineSlider> sMix, sSize, sDamp, sWidth;
     audiolab::SegButtons tabs { theme, { "Chamber", "Plate", "Spring", "Room", "Hall", "Church" } };
-    audiolab::DecayGraph graph { theme };
-    audiolab::IrRenderer renderer;
-    audiolab::rv::ReverbEngine::Params requested;
-    bool firstRequest = true;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioLabReverbEditor)
 };

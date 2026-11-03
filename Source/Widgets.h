@@ -21,6 +21,7 @@ public:
     SegButtons (Theme& t, juce::StringArray opts) : theme (t), options (std::move (opts)) {}
 
     bool vertical = false;      // boutons empilés (Ratio, Meter)
+    int columns = 0;            // > 0 : grille de « columns » colonnes (ex. modes de la Reverb en 2 rangées de 3)
     bool onSurface = false;     // posé sur une surface : bande couleur « Rails »
     float fontSize = 12, gap = 2, padX = 12;
 
@@ -75,6 +76,13 @@ private:
     juce::Rectangle<float> cell (int i) const
     {
         const int n = options.size();
+        if (columns > 0)
+        {
+            const int rows = (n + columns - 1) / columns;
+            const float w = ((float) getWidth() - 6 - gap * (columns - 1)) / columns;
+            const float h = ((float) getHeight() - 6 - gap * (rows - 1)) / rows;
+            return { 3 + (i % columns) * (w + gap), 3 + (i / columns) * (h + gap), w, h };
+        }
         if (vertical)
         {
             const float h = ((float) getHeight() - 6 - gap * (n - 1)) / n;

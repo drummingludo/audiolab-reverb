@@ -36,12 +36,12 @@ AudioLabReverbEditor::AudioLabReverbEditor (AudioLabReverbProcessor& p)
     sDamp = std::make_unique<LineSlider> (theme, prm (params::damp), "Damp", [this] { return modeDefault (params::damp); }, U (helpDamp));
     sWidth = std::make_unique<LineSlider> (theme, prm (params::width), "Width", [this] { return modeDefault (params::width); }, U (helpWidth));
 
-    tabs.gap = 0;
+    tabs.columns = 3;   // Chamber, Plate, Spring / Room, Hall, Church
     tabs.attach (prm (params::mode));
     tabs.onSelect = [this] (int i) { proc.selectMode (i); };
     tabs.setTooltip (U (helpTabs));
 
-    for (auto* c : std::initializer_list<juce::Component*> { kPre.get(), kDec.get(), sMix.get(), sSize.get(), sDamp.get(), sWidth.get(), &tabs, &graph })
+    for (auto* c : std::initializer_list<juce::Component*> { kPre.get(), kDec.get(), sMix.get(), sSize.get(), sDamp.get(), sWidth.get(), &tabs })
         content.addAndMakeVisible (c);
 
     const double sc = juce::jlimit (0.6, 2.0, (double) proc.ui.getProperty ("scale", 1.0));   // lu avant les limites
@@ -49,13 +49,10 @@ AudioLabReverbEditor::AudioLabReverbEditor (AudioLabReverbProcessor& p)
     getConstrainer()->setFixedAspectRatio ((double) baseW / baseH);
     setResizeLimits (baseW * 6 / 10, baseH * 6 / 10, baseW * 2, baseH * 2);
     setSize (juce::roundToInt (baseW * sc), juce::roundToInt (baseH * sc));
-    timerCallback();
-    startTimerHz (30);
 }
 
 AudioLabReverbEditor::~AudioLabReverbEditor()
 {
-    stopTimer();
     tooltips.setLookAndFeel (nullptr);
     setLookAndFeel (nullptr);
 }
@@ -70,15 +67,6 @@ float AudioLabReverbEditor::modeDefault (const char* id) const
     if (s == params::size) return (float) (d.size * 100);
     if (s == params::damp) return (float) (d.damp * 100);
     return (float) (d.width * 100);
-}
-
-void AudioLabReverbEditor::timerCallback()
-{
-    const auto p = proc.currentParams();
-    graph.setParams (p);
-    if (firstRequest || ! sameParams (p, requested)) { renderer.request (p); requested = p; firstRequest = false; }
-    IrResult r;
-    if (renderer.fetch (r)) graph.setResult (std::move (r));
 }
 
 void AudioLabReverbEditor::resized()
@@ -97,15 +85,13 @@ void AudioLabReverbEditor::Content::paint (juce::Graphics& g)
 void AudioLabReverbEditor::Content::resized()
 {
     auto& e = ed;
-    // Colonne de gauche (x 24 → 262) : Pre-delay et Decay comme les potentiomètres du compresseur
-    // (centres x 75,5 et 202,5, y 76), puis les 4 curseurs
-    e.kPre->setBounds (4, 20, 143, 130);
-    e.kDec->setBounds (131, 20, 143, 130);
-    e.sMix->setBounds (24, 172, 238, 24);
-    e.sSize->setBounds (24, 200, 238, 24);
-    e.sDamp->setBounds (24, 228, 238, 24);
-    e.sWidth->setBounds (24, 256, 238, 24);
-    // Colonne de droite (x 286 → 736) : onglets des modes, puis l'écran de décroissance
-    e.tabs.setBounds (286, 24, 450, 28);
-    e.graph.setBounds (286, 64, 450, 216);
+    // Une colonne (x 24 → 262) : modes (2 rangées de 3), Pre-delay et Decay (potentiomètres du compresseur,
+    // centres x 79,5 et 206,5, y 159), puis les 4 curseurs ; l'écran de décroissance est retiré pour ce test
+    e.tabs.setBounds (24, 24, 238, 60);
+    e.kPre->setBounds (8, 103, 143, 130);
+    e.kDec->setBounds (135, 103, 143, 130);
+    e.sMix->setBounds (24, 254, 238, 24);
+    e.sSize->setBounds (24, 282, 238, 24);
+    e.sDamp->setBounds (24, 310, 238, 24);
+    e.sWidth->setBounds (24, 338, 238, 24);
 }
