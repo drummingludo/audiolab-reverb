@@ -97,14 +97,15 @@ void AudioLabReverbEditor::Content::paint (juce::Graphics& g)
 void AudioLabReverbEditor::Content::resized()
 {
     auto& e = ed;
-    // Colonne de gauche (x 24 → 424) : deux potentiomètres de 170 px (centres x 122 et 326, y 132), puis les 4 curseurs
-    e.kPre->setBounds (32, 47, 180, 197);
-    e.kDec->setBounds (236, 47, 180, 197);
-    e.sMix->setBounds (24, 268, 400, 24);
-    e.sSize->setBounds (24, 308, 400, 24);
-    e.sDamp->setBounds (24, 348, 400, 24);
-    e.sWidth->setBounds (24, 388, 400, 24);
-    // Colonne de droite (x 456 → 976) : onglets des modes, puis l'écran de décroissance
-    e.tabs.setBounds (456, 87, 520, 41);
-    e.graph.setBounds (456, 144, 520, 222);
+    // Colonne de gauche (x 24 → 262) : Pre-delay et Decay comme les potentiomètres du compresseur
+    // (centres x 75,5 et 202,5, y 76), puis les 4 curseurs
+    e.kPre->setBounds (4, 20, 143, 130);
+    e.kDec->setBounds (131, 20, 143, 130);
+    e.sMix->setBounds (24, 172, 238, 24);
+    e.sSize->setBounds (24, 200, 238, 24);
+    e.sDamp->setBounds (24, 228, 238, 24);
+    e.sWidth->setBounds (24, 256, 238, 24);
+    // Colonne de droite (x 286 → 736) : onglets des modes, puis l'écran de décroissance
+    e.tabs.setBounds (286, 24, 450, 28);
+    e.graph.setBounds (286, 64, 450, 216);
 }

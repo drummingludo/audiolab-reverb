@@ -114,7 +114,7 @@ private:
     bool fresh = false;
 };
 
-// Écran 520 x 222 : bord « Rails », fond « Surface », dessin dans le repère 420 x 170 de la maquette
+// Écran 450 x 216 : bord « Rails », fond « Surface », dessin dans le repère 420 x 170 de la maquette
 class DecayGraph : public juce::Component
 {
 public:
@@ -130,11 +130,12 @@ public:
         g.setColour (p.surface); g.fillRoundedRectangle (box, 10);
         g.setColour (p.rail); g.drawRoundedRectangle (box.reduced (0.5f), 10, 1);
 
-        // repère de la maquette (420 x 170), mis à l'échelle de la zone utile
-        const float k = (box.getWidth() - 30) / 420.0f;
+        // repère de la maquette (420 x 170), mis à l'échelle de la zone utile (sans déformation), centré
+        const float k = std::min ((box.getWidth() - 30) / 420.0f, (box.getHeight() - 26) / 170.0f);
+        const float ox = (box.getWidth() - 420 * k) / 2, oy = (box.getHeight() - 170 * k) / 2;
         juce::Graphics::ScopedSaveState ss (g);
         g.reduceClipRegion (box.reduced (1).toNearestInt());
-        g.addTransform (juce::AffineTransform::scale (k).translated (15, 13));
+        g.addTransform (juce::AffineTransform::scale (k).translated (ox, oy));
 
         const double pre = cur.predelay / 1000, rt = cur.decay, T = axisFor (cur);
         auto X = [&] (double t) { return (float) (10 + std::min (1.0, t / T) * 400); };

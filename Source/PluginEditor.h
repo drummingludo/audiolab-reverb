@@ -12,8 +12,8 @@ public:
     void paint (juce::Graphics&) override {}
     void resized() override;
 
-    // Maquette « Audio Lab, Modes de réverb » : 1000 x 460, marges de 24 px
-    static constexpr int baseW = 1000, baseH = 460;
+    // Mêmes tailles d'éléments que le compresseur (grille de 24 px) : 760 x 304
+    static constexpr int baseW = 760, baseH = 304;
 
 private:
     class Content : public juce::Component

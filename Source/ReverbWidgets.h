@@ -1,5 +1,5 @@
-// Composants de la maquette « Audio Lab, Modes de réverb » : gros potentiomètres Pre-delay / Decay et curseurs Mix, Size, Damp, Width.
-// Géométrie reprise du SVG de la maquette (potentiomètre de 170 px dessiné dans un repère de 100 unités).
+// Composants de « Lab Verb » : potentiomètres Pre-delay / Decay et curseurs Mix, Size, Damp, Width,
+// aux mêmes tailles que le compresseur (charte V2 : potentiomètre principal arc Ø 98, curseur piste 4 px, bouton 18 px).
 #pragma once
 #include "Widgets.h"
 
@@ -42,8 +42,8 @@ std::unique_ptr<juce::AccessibilityHandler> rangedHandler (Owner& o, juce::Range
         juce::AccessibilityHandler::Interfaces { std::make_unique<Value> (prm, att) });
 }
 
-// ── Gros potentiomètre orange (Pre-delay, Decay) ────────────────────────
-// Boîte 180 x 197 : potentiomètre de 170 px en haut, nom 8 px dessous.
+// ── Potentiomètre orange (Pre-delay, Decay), à la taille du compresseur ──
+// Boîte 143 x 130 : arc Ø 98 centré à 56 px du haut, nom dessous.
 class ReverbKnob : public juce::Component, public juce::SettableTooltipClient
 {
 public:
@@ -61,63 +61,67 @@ public:
 
     void paint (juce::Graphics& g) override
     {
+        // Même géométrie que le potentiomètre principal du compresseur (charte V2) :
+        // arc Ø 98, épaisseur 3,2, capuchon 74, valeur 14 px, unité 11 px, nom 11 px 58 px sous le centre.
         const auto& p = theme.pal();
-        const float u = 1.7f, cx = getWidth() * 0.5f, cy = 85.0f;
+        const float cx = getWidth() * 0.5f, cy = 56.0f, r = 49.0f, sw = 3.2f, cd = 74.0f;
         const float A0 = -0.75f * juce::MathConstants<float>::pi, A1 = -A0;
         const float v = param.getValue(), a = A0 + (A1 - A0) * v;
-        auto pt = [&] (float ang, float r) { return juce::Point<float> (cx + std::sin (ang) * r * u, cy - std::cos (ang) * r * u); };
+        auto pt = [&] (float ang, float rad) { return juce::Point<float> (cx + std::sin (ang) * rad, cy - std::cos (ang) * rad); };
 
         // rail (bouts ronds), éclairci au survol
-        juce::Path trk; trk.addCentredArc (cx, cy, 42 * u, 42 * u, 0, A0, A1, true);
+        juce::Path trk; trk.addCentredArc (cx, cy, r, r, 0, A0, A1, true);
         g.setColour (hover ? p.railHi : p.rail);
-        g.strokePath (trk, juce::PathStrokeType (3.2f * u, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.strokePath (trk, juce::PathStrokeType (sw, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
         const bool on = v > 0.003f;
         if (on)
         {
-            const auto z = pt (A0, 42), e = pt (a, 42);
+            const auto z = pt (A0, r), e = pt (a, r);
             auto brush = [&] (float alpha) { return juce::FillType (juce::ColourGradient (p.orange0.withMultipliedAlpha (alpha), z, p.orange.withMultipliedAlpha (alpha), e, false)); };
-            juce::Path arc; arc.addCentredArc (cx, cy, 42 * u, 42 * u, 0, A0, a, true);
-            // halo (flou de la maquette, plus fort pendant le réglage)
-            const float boost = dragging ? 1.6f : 1.0f;
-            const float extra[] = { 6.0f, 3.6f, 1.8f }, alpha[] = { 0.06f, 0.12f, 0.2f };
-            for (int i = 0; i < 3; ++i)
+            juce::Path arc; arc.addCentredArc (cx, cy, r, r, 0, A0, a, true);
+            // halo fin et discret, à peine renforcé pendant le réglage
+            const float boost = dragging ? 1.5f : 1.0f;
+            const float extra[] = { 3.2f, 1.6f }, alpha[] = { 0.05f, 0.12f };
+            for (int i = 0; i < 2; ++i)
             {
-                g.setFillType (brush (std::min (1.0f, alpha[i] * boost)));
-                g.strokePath (arc, juce::PathStrokeType (3.2f * u + extra[i], juce::PathStrokeType::curved, juce::PathStrokeType::butt));
+                g.setFillType (brush (alpha[i] * boost));
+                g.strokePath (arc, juce::PathStrokeType (sw + extra[i], juce::PathStrokeType::curved, juce::PathStrokeType::butt));
             }
             g.setFillType (brush (1.0f));
-            g.strokePath (arc, juce::PathStrokeType (3.2f * u, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
-            g.setColour (p.orange0); g.fillEllipse (z.x - 1.6f * u, z.y - 1.6f * u, 3.2f * u, 3.2f * u);
+            g.strokePath (arc, juce::PathStrokeType (sw, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
+            g.setColour (p.orange0); g.fillEllipse (z.x - sw / 2, z.y - sw / 2, sw, sw);
         }
 
-        // capuchon : ombres, disque, liseré de lumière
-        juce::Path cap; cap.addEllipse (cx - 33 * u, cy - 33 * u, 66 * u, 66 * u);
-        softShadow (g, cap, juce::Colours::black.withAlpha (0.5f), 17, { 0, 8 });
+        // capuchon : ombres, liseré de lumière en haut, disque
+        juce::Path cap; cap.addEllipse (cx - cd / 2, cy - cd / 2, cd, cd);
+        softShadow (g, cap, juce::Colours::black.withAlpha (0.5f), 20, { 0, 8 });
         softShadow (g, cap, juce::Colours::black.withAlpha (0.45f), 2, { 0, 1 });
-        g.setColour (p.cap); g.fillPath (cap);
-        juce::Path hl; hl.addCentredArc (cx, cy, 32.5f * u, 32.5f * u, 0, -0.96f, 0.96f, true);
-        g.setColour (juce::Colours::white.withAlpha (0.07f));
-        g.strokePath (hl, juce::PathStrokeType (1.0f * u));
+        {
+            juce::Graphics::ScopedSaveState s (g);
+            g.reduceClipRegion (cap);
+            g.setColour (juce::Colours::white.withAlpha (0.07f)); g.fillPath (cap);
+            g.setColour (p.cap); g.fillEllipse (cx - cd / 2, cy - cd / 2 + 1, cd, cd);
+        }
 
-        // repère, couleur de fin de l'arc
-        juce::Path m; m.startNewSubPath (pt (a, 25)); m.lineTo (pt (a, 31));
+        // repère, couleur de fin de l'arc, au bord du capuchon
+        juce::Path m; m.startNewSubPath (pt (a, cd / 2)); m.lineTo (pt (a, cd / 2 - 8));
         g.setColour (on ? p.orange : p.orange0);
-        g.strokePath (m, juce::PathStrokeType (0.9f * u, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        g.strokePath (m, juce::PathStrokeType (1.5f, juce::PathStrokeType::mitered, juce::PathStrokeType::butt));
         if (focused)
         {
-            const float fr = 42 * u + 1.6f * u + 3;
+            const float fr = r + sw / 2 + 3;
             g.setColour (p.teal2.withAlpha (0.6f)); g.drawEllipse (cx - fr, cy - fr, 2 * fr, 2 * fr, 1.5f);
         }
 
-        // valeur (15 unités, 600) et unité (7 unités, gris doux)
+        // valeur (14 px, 600) et unité (11 px, gris doux)
         g.setColour (p.text);
-        drawTabularAt (g, theme, fmt (param.convertFrom0to1 (v)), 15 * u, 600, cx, cy + 3 * u);
-        g.setColour (p.soft); g.setFont (theme.ui (7 * u));
-        g.drawText (unitText, juce::Rectangle<float> (cx - 30, cy + 13.5f * u - 10, 60, 12), juce::Justification::centredBottom, false);
-        // nom
-        g.setColour (p.text); g.setFont (theme.ui (13, 600, 0.06f));
-        g.drawText (labelText.toUpperCase(), juce::Rectangle<float> (0, 178, (float) getWidth(), 19), juce::Justification::centred, false);
+        drawTabular (g, theme, fmt (param.convertFrom0to1 (v)), 14, 600, juce::Rectangle<float> (cx - cd / 2, cy - 16, cd, 18), juce::Justification::centred, -0.01f);
+        g.setColour (p.soft); g.setFont (theme.ui (11));
+        g.drawText (unitText, juce::Rectangle<float> (cx - cd / 2, cy + 2, cd, 14), juce::Justification::centred, false);
+        // nom (11 px, 600, majuscules, 58 px sous le centre)
+        g.setColour (p.text); g.setFont (theme.ui (11, 600, 0.06f));
+        g.drawText (labelText.toUpperCase(), juce::Rectangle<float> (0, cy + 58, (float) getWidth(), 13), juce::Justification::centredTop, false);
     }
 
     void mouseEnter (const juce::MouseEvent&) override { hover = true; repaint(); }
@@ -164,8 +168,8 @@ private:
     bool dragging = false, focused = false, hover = false;
 };
 
-// ── Curseur de la maquette (Mix, Size, Damp, Width) ──────────────────────
-// Ligne de 400 x 24 : nom (70 px) · piste (250 px, 16 px d'écart) · valeur (48 px, à droite).
+// ── Curseur (Mix, Size, Damp, Width) ────────────────────────────────────
+// Ligne de 238 x 24 : nom (54 px) · piste · valeur (48 px, à droite).
 class LineSlider : public juce::Component, public juce::SettableTooltipClient
 {
 public:
@@ -184,7 +188,7 @@ public:
         const auto& p = theme.pal();
         const float h = (float) getHeight(), cyy = h * 0.5f, v = param.getValue();
         g.setColour (p.text); g.setFont (theme.ui (11, 600, 0.06f));
-        g.drawText (labelText.toUpperCase(), juce::Rectangle<float> (0, 0, 70, h), juce::Justification::centredLeft, false);
+        g.drawText (labelText.toUpperCase(), juce::Rectangle<float> (0, 0, 54, h), juce::Justification::centredLeft, false);
 
         const auto tr = track();
         g.setColour (hover ? p.railHi : p.rail);
@@ -240,7 +244,7 @@ public:
     std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override { return rangedHandler (*this, param, attachment); }
 
 private:
-    juce::Rectangle<float> track() const { return { 86.0f, 0.0f, (float) getWidth() - 86 - 64, (float) getHeight() }; }
+    juce::Rectangle<float> track() const { return { 58.0f, 0.0f, (float) getWidth() - 58 - 56, (float) getHeight() }; }
     void setFromX (float x)
     {
         const auto tr = track();
