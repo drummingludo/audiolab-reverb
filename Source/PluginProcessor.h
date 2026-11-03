@@ -42,12 +42,12 @@ public:
     // Réglages actuels convertis pour le moteur (mix, size, damp, width de 0 à 1)
     audiolab::rv::ReverbEngine::Params currentParams() const;
 
-    // Passe au mode choisi et charge ses valeurs de la maquette (geste unique pour l'hôte)
+    // Passe au mode choisi et charge ses valeurs de la maquette (geste unique pour l'hôte) ;
+    // les réglages avancés (Low cut, High cut, Bass, Early / Late, Ducking, Freeze) ne changent pas
     void selectMode (int mode);
 
 private:
     std::unique_ptr<audiolab::rv::ReverbEngine> engine;
-    audiolab::rv::ReverbEngine::Params sent;
     juce::AudioProcessorParameter* bypassParam = nullptr;
     std::vector<float> inR, outL, outR;
     juce::SmoothedValue<float> bypassSm;

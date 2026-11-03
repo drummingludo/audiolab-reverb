@@ -3,12 +3,14 @@
 La réverbération d'**Audio Lab** (« Chimiste du son », Transversal Studio) en plugin **VST3 / AU** pour Logic Pro, Ableton Live, FL Studio, Cubase, Reaper, Studio One, Bitwig…, et **AAX** pour Pro Tools (version de test non signée, voir plus bas).
 
 - **Six modes**, chacun bâti sur un algorithme publié :
-  - **Chamber, Room, Hall, Church** : réflexions précoces calculées par sources-images (Allen et Berkley, 1979) sur une pièce de la taille du mode, diffuseur (Signalsmith, 2021), queue par réseau de retards réinjectés à 8 lignes (FDN, matrice de Householder) avec filtres d'absorption de Jot : Decay règle exactement le RT60 du médium, les graves et les aigus suivent le caractère du mode.
-  - **Plate** : réservoir de Jon Dattorro (1997), longueurs et coefficients publiés.
-  - **Spring** : deux ressorts faits de chaînes de passe-tout étirés dans une boucle (Välimäki, Parker et Abel, 2010), d'où les échos en « boing ».
-- **Six réglages**, ceux de la maquette : Pre-delay, Decay (RT60 en secondes), Mix, Size, Damp, Width. Choisir un mode charge ses réglages de départ.
-- **Même son que le prototype** : le moteur est un portage ligne à ligne du « Labo Reverb » (JavaScript). Le banc de test compare les deux : écart maximal inférieur à 10⁻¹², à 44,1 / 48 / 96 kHz, quelle que soit la taille des blocs du logiciel.
-- **Interface de la maquette** « Audio Lab, Modes de réverb » : potentiomètres orange, curseurs teal, onglets des modes, écran qui montre la vraie courbe de décroissance du moteur, ses réflexions précoces et le repère RT60. Thème sombre de la charte Transversal, police Poppins, fenêtre redimensionnable de 60 à 200 %, info-bulles en français.
+  - **Chamber, Room, Hall, Church** : réflexions précoces calculées par sources-images (Allen et Berkley, 1979) pour deux sources (gauche, droite) dans une pièce de la taille du mode, deux diffuseurs (Signalsmith, 2021), queue par réseau de retards réinjectés à 16 lignes (FDN, deux moitiés Hadamard couplées, toutes les lignes légèrement modulées) avec filtres d'absorption de Jot : Decay règle exactement le RT60 du médium, les graves et les aigus suivent le caractère du mode.
+  - **Plate** : réservoir de Jon Dattorro (1997), longueurs et coefficients publiés ; L et R entrent chacun dans une moitié du réservoir.
+  - **Spring** : deux ressorts faits de chaînes de passe-tout étirés dans une boucle (Välimäki, Parker et Abel, 2010), d'où les échos en « boing » ; entrée mono, comme un vrai ressort.
+- **Vraie entrée stéréo** (2.0.0) : une source à gauche donne une réverb qui penche à gauche.
+- **Réglages de la maquette** : Pre-delay, Decay (RT60 en secondes), Mix, Size, Damp, Width ; choisir un mode charge ses réglages de départ. Changer Size, le mode ou le Pre-delay ne coupe pas la réverb et ne fait aucun clic (2.0.0).
+- **Advanced settings** (2.0.0, panneau replié) : Low cut, High cut, Bass (temps de réverbération des graves), Early / Late, Ducking, Freeze.
+- **Même son de 44,1 à 192 kHz** (filtres « matched ») ; aucune latence. Depuis la 2.0.0 le plugin est la version « pro » : il s'écarte volontairement du prototype web « Labo Reverb » (JavaScript), dont il garde les niveaux et les RT60.
+- **Interface** : potentiomètres orange, curseurs teal, onglets des modes, thème sombre de la charte Transversal, police Poppins, fenêtre redimensionnable de 60 à 200 %, bulles d'aide en anglais.
 
 Plan détaillé de l'interface et du moteur : `docs/11_GUI_Plugin_Reverb.md`.
 
@@ -33,10 +35,11 @@ cmake --build build --config Release
 Tests (Linux ou Mac) :
 
 ```
+clang++ -O2 -std=c++17 -I Source tests/quality_test.cpp -o qt && ./qt   # banc qualité du moteur, sans JUCE (seuils chiffrés)
 cmake -B build -DALR_TESTS=ON
 cmake --build build --target ALRProcessorTest ALRRenderUI
 g++ -O2 -std=c++17 -ffp-contract=off -ISource tests/core_run.cpp -o tests/core_run
-python3 tests/verify_dsp.py     # moteur C++ ↔ prototype Labo Reverb (Node.js et NumPy requis)
+python3 tests/verify_dsp.py     # moteur C++ ↔ prototype Labo Reverb : niveaux, RT60 (Node.js et NumPy requis)
 ```
 
 ## Sources

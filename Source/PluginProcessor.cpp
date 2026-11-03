@@ -33,6 +33,13 @@ rv::ReverbEngine::Params AudioLabReverbProcessor::currentParams() const
     p.size = getParam (params::size) / 100.0;
     p.damp = getParam (params::damp) / 100.0;
     p.width = getParam (params::width) / 100.0;
+    // 2.0.0 : réglages avancés
+    p.lowCut = getParam (params::lowCut);
+    p.highCut = getParam (params::highCut);
+    p.bass = getParam (params::bass);
+    p.erLate = getParam (params::erLate) / 100.0;
+    p.ducking = getParam (params::ducking) / 100.0;
+    p.freeze = getParam (params::freeze) > 0.5f;
     return p;
 }
 
@@ -54,14 +61,18 @@ void AudioLabReverbProcessor::selectMode (int mode)
 
 double AudioLabReverbProcessor::getTailLengthSeconds() const
 {
-    return getParam (params::decay) * 1.6 + getParam (params::predelay) / 1000.0 + 0.1;
+    if (getParam (params::freeze) > 0.5f) return 3600;   // queue gelée : elle dure tant que Freeze reste allumé
+    const int m = juce::jlimit (0, (int) rv::numModes - 1, juce::roundToInt (getParam (params::mode)));
+    const auto& d = rv::modeDef (m);
+    const double lowMul = d.engine == rv::springEngine ? 1.0 : std::max (1.0, (d.engine == rv::roomEngine ? d.bass : 1.0) * getParam (params::bass));
+    return getParam (params::decay) * lowMul * 1.6 + getParam (params::predelay) / 1000.0 + 0.1;
 }
 
 void AudioLabReverbProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    // deux moteurs complets (changement de Size ou de mode en fondu) : toute la mémoire est réservée ici
     engine = std::make_unique<rv::ReverbEngine> (sampleRate);
-    sent = currentParams();
-    engine->setParams (sent);
+    engine->setParams (currentParams());
     engine->snap();
     const int block = std::max (512, samplesPerBlock);
     inR.assign ((size_t) block, 0.0f);
@@ -79,14 +90,7 @@ void AudioLabReverbProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     for (int ch = nIn; ch < nOut; ++ch) buffer.clear (ch, 0, total);
     if (nIn == 0 || total == 0 || engine == nullptr) return;
 
-    const auto p = currentParams();
-    using rv::same;
-    if (p.mode != sent.mode || ! same (p.predelay, sent.predelay) || ! same (p.decay, sent.decay) || ! same (p.mix, sent.mix)
-        || ! same (p.size, sent.size) || ! same (p.damp, sent.damp) || ! same (p.width, sent.width))
-    {
-        engine->setParams (p);
-        sent = p;
-    }
+    engine->setParams (currentParams());   // simple copie : le moteur lisse et applique tout sur sa grille de 128 échantillons
     bypassSm.setTargetValue (getParam (params::bypass) > 0.5f ? 1.0f : 0.0f);
 
     float* L = buffer.getWritePointer (0);

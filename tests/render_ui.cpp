@@ -1,5 +1,6 @@
 // Test hors DAW : fait tourner le plugin sur un signal musical et enregistre des captures
-// de l'interface (les 6 modes, 60 % et 200 %) en PNG.
+// de l'interface (les 6 modes, 60 % et 200 %) en PNG ; 2.0.0 : panneau « Advanced settings » ouvert
+// (Chamber, Plate et Spring avec les réglages sans effet grisés, valeurs non neutres, 60 % et 200 %).
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include <thread>
@@ -56,7 +57,18 @@ int main (int argc, char** argv)
         steps.push_back ({ 1800, [&, m] { shot (names[m]); if (m < 5) { proc->selectMode (m + 1); rebuild(); } } });
     steps.push_back ({ 10, [&] { proc->selectMode (0); rebuild(); ed->setSize (AudioLabReverbEditor::baseW * 6 / 10, AudioLabReverbEditor::baseH * 6 / 10); } });
     steps.push_back ({ 1500, [&] { shot ("07_60pc"); ed->setSize (AudioLabReverbEditor::baseW * 2, AudioLabReverbEditor::baseH * 2); } });
-    steps.push_back ({ 1500, [&] { shot ("08_200pc"); juce::MessageManager::getInstance()->stopDispatchLoop(); } });
+    steps.push_back ({ 1500, [&] { shot ("08_200pc"); } });
+    // panneau avancé ouvert (état mémorisé dans la session, lu à la création de la fenêtre)
+    auto setP = [&] (const char* id, float v) { auto* q = proc->apvts.getParameter (id); q->setValueNotifyingHost (q->convertTo0to1 (v)); };
+    steps.push_back ({ 10, [&] { proc->ui.setProperty ("scale", 1.0, nullptr); proc->ui.setProperty ("adv", true, nullptr); proc->selectMode (0); rebuild(); } });
+    steps.push_back ({ 1500, [&] { shot ("09_adv_chamber"); proc->selectMode (1); rebuild(); } });
+    steps.push_back ({ 1500, [&] { shot ("10_adv_plate"); proc->selectMode (2); rebuild(); } });
+    steps.push_back ({ 1500, [&] { shot ("11_adv_spring"); proc->selectMode (4);
+        setP (params::lowCut, 150); setP (params::highCut, 6500); setP (params::bass, 1.6f); setP (params::erLate, -40); setP (params::ducking, 35); setP (params::freeze, 1);
+        rebuild(); } });
+    steps.push_back ({ 1500, [&] { shot ("12_adv_values"); ed->setSize (AudioLabReverbEditor::baseW * 6 / 10, AudioLabReverbEditor::baseHOpen * 6 / 10); } });
+    steps.push_back ({ 1500, [&] { shot ("13_adv_60pc"); ed->setSize (AudioLabReverbEditor::baseW * 2, AudioLabReverbEditor::baseHOpen * 2); } });
+    steps.push_back ({ 1500, [&] { shot ("14_adv_200pc"); juce::MessageManager::getInstance()->stopDispatchLoop(); } });
 
     std::function<void (size_t)> next = [&] (size_t i)
     {
